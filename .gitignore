@@ -1,2 +1,8 @@
 # Exclude the Vivado project folder
 vivado/
+
+# Exclude all files and folders within folders for individual IPs
+# inside the ip folder
+ip/*/*
+# except the .xci file
+!ip/*/*.xci
