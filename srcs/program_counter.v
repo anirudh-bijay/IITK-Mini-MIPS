@@ -23,7 +23,7 @@
 
 
 module program_counter #(
-    parameter BUS_WIDTH = 9
+    parameter BUS_WIDTH = 32
 )(
     input [BUS_WIDTH - 1 : 0] D,
     input clk,
