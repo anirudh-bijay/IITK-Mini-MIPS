@@ -14,7 +14,9 @@
 // read-write operations. On read and write to the same register, the existing
 // data is read first before writing in the new data.
 // 
-// Reads are unclocked and unlatched; writes are clocked.
+// Reads are unclocked and unlatched; writes are clocked. The register with
+// label (address) 0 is the MIPS $zero register: every read from the register
+// gives zero and any write to the register is discarded.
 // 
 // Dependencies: 
 // 
@@ -39,15 +41,12 @@ module register_file #(
     output [BUS_WIDTH - 1 : 0] data_out1,
     output [BUS_WIDTH - 1 : 0] data_out2
 );
-    reg [BUS_WIDTH - 1 : 0] registers[0 : COUNT - 1];
-    
-    always @(*)
-        registers[0] <= 0;
-    
-    assign data_out1 = registers[read_addr1];
-    assign data_out2 = registers[read_addr2];
+    (* ram_style = "registers" *) reg [BUS_WIDTH - 1 : 0] registers[1 : COUNT - 1];
+        
+    assign data_out1 = (read_addr1) ? registers[read_addr1] : 0;
+    assign data_out2 = (read_addr2) ? registers[read_addr2] : 0;
     
     always @(posedge clk)
-        if (wr_en && write_addr != {ADDR_WIDTH{1'b0}})
-                registers[write_addr] <= data_in;
+        if (wr_en)
+            registers[write_addr] <= data_in;
 endmodule
