@@ -9,6 +9,11 @@ for addition, subtraction, and comparisons.
 Here, we design the microarchitecture of a single-cycle processor implementing the ISA
 in Verilog. The target device is the AUP PYNQ-Z2.
 
+This project is undertaken in partial fulfilment of the requirements of the course
+[CS220: Computer Organisation](https://www.cse.iitk.ac.in/pages/CS220.html) offered at
+IIT Kanpur in Winter 2025 instructed by
+[Prof. Debapriya Basu Roy](https://www.cse.iitk.ac.in/users/dbroy).
+
 ## Building the project
 
 The Verilog source files can be found under [`src`](src), while IPs can be found under
