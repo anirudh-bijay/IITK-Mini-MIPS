@@ -26,7 +26,7 @@ module instruction_memory #(
     localparam CAPACITY = 512,
     localparam BUS_WIDTH = 32,
     localparam ADDR_WIDTH = $clog2(CAPACITY)
-) (
+)(
     input [ADDR_WIDTH - 1 : 0] read_addr,
     input [ADDR_WIDTH - 1 : 0] write_addr,
     input [BUS_WIDTH - 1 : 0] data_in,
@@ -34,7 +34,7 @@ module instruction_memory #(
     input clk,
     output [BUS_WIDTH - 1 : 0] data_out
 );
-    distributed_ram_0 memory(
+    simple_dual_port_distributed_ram_0 memory(
         .d(data_in),
         .a(write_addr),
         .dpra(read_addr),
