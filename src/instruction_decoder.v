@@ -22,27 +22,50 @@
 
 module instruction_decoder #(
     // Opcodes
-    parameter R_TYPE    = 6'b000000,
-    parameter J         = 6'b000010,
-    parameter JR        = 6'b001000,
-    parameter JAL       = 6'b000011,
-    parameter LW        = 6'b100011,
-    parameter LUI       = 6'b001111,
-    parameter SW        = 6'b101011,
-    parameter BEQ       = 6'b000100,
-    parameter BNE       = 6'b000101,
-    parameter BGT,
-    parameter BGTE,
-    parameter BLE,
-    parameter BLEQ,
-    parameter BLEU,
-    parameter BGTU,
+    parameter R_TYPE    = 6'h0,
+    parameter MADD_OP   = 6'h1c,
+    parameter MADDU_OP  = 6'h1c,
+    parameter ADDI      = 6'h8,
+    parameter ADDIU     = 6'h9,
+    parameter ANDI      = 6'hc,
+    parameter ORI       = 6'hd,
+    parameter XORI      = 6'he,
+    parameter LW        = 6'h23,
+    parameter SW        = 6'h2b,
+    parameter LUI       = 6'hf,
+    parameter BEQ       = 6'h4,
+    parameter BNE       = 6'h5,
+    parameter BGT       = 6'h7,
+    parameter BGTE      = 6'h1,
+    parameter BLE       = 6'h1,
+    parameter BLEQ      = 6'h7,
+    parameter BLEU      = 6'h16,
+    parameter BGTU      = 6'h17,
+    parameter SLTI      = 6'ha,
+    parameter SEQ       = 6'h18,
+    parameter J         = 6'h2,
+    parameter JAL       = 6'h3,
     // Functions
-    parameter SLL       = 6'b000000,
-    parameter SRL       = 6'b000010,
+    parameter ADD       = 6'h20,
+    parameter SUB       = 6'h22,
+    parameter ADDU      = 6'h21,
+    parameter SUBU      = 6'h23,
+    parameter MADD      = 6'h0,
+    parameter MADDU     = 6'h1,
+    parameter MUL       = 6'h18,
+    parameter AND       = 6'h24,
+    parameter OR        = 6'h25,
+    parameter NOT       = 6'h27,
+    parameter XOR       = 6'h26,
+    parameter SLL       = 6'h0,
+    parameter SRL       = 6'h2,
     parameter SLA       = SLL,
-    parameter SRA       = 6'b000011
-) (
+    parameter SRA       = 6'h3,
+    parameter SLT       = 6'h2a,
+    parameter JR        = 6'h8,
+    parameter MFHI      = 6'h10,
+    parameter MFLO      = 6'h12
+)(
     input [5:0] opcode,
     input [5:0] funct,
     
@@ -105,7 +128,23 @@ module instruction_decoder #(
     // If write_to_register is high, the register file's write enable is
     // asserted.
     // Else, it is deasserted.
-    output reg write_to_register
+    output reg write_to_register,
+    
+    // If write_to_hi is high, a write is performed to the hi register.
+    // Else, nothing is written to hi.
+    output reg write_to_hi,
+    
+    // If write_to_lo is high, a write is performed to the lo register.
+    // Else, nothing is written to lo.
+    output reg write_to_lo,
+    
+    // If read_from_hi is high, the data at the write port of the register
+    // file is sourced from the hi register.
+    output reg read_from_hi,
+    
+    // If read_from_lo is high, the data at the write port of the register
+    // file is sourced from the lo register.
+    output reg read_from_lo
 );
     always @* begin
         // needs_three_regs
@@ -123,13 +162,17 @@ module instruction_decoder #(
         // jump_reg
         case (opcode)
             JR: jump_reg <= 1;
-            default: jump_reg <= 0;
+            default: jump_reg <= jump ? 0 : 1'bx;
         endcase
         
         // load
         case (opcode)
-            LW, LUI: load <= 1;
+            LW: load <= 1;
             default: load <= 0;
+            // NOTE: lui is not a load instruction in the sense of the load
+            //       signal as defined above. While lw loads data from the
+            //       memory, lui simply performs a left shift and writes the
+            //       result to the destination register.
         endcase
         
         // store
@@ -146,16 +189,17 @@ module instruction_decoder #(
         
         // alu_op
         case (opcode)
-            // TODO: 
+            LW, SW: alu_op <= ADDIU;
             default: alu_op <= funct;
         endcase
         
         // alu_imm
         case (opcode)
-            R_TYPE: case (funct)
-                SLL, SLA, SRL, SRA: alu_imm <= 1;
-                default: alu_imm <= 0;
-            endcase
+            R_TYPE:
+                case (funct)
+                    SLL, SLA, SRL, SRA: alu_imm <= 1;
+                    default: alu_imm <= 0;
+                endcase
             
             default: alu_imm <= !branch;
         endcase
@@ -168,5 +212,50 @@ module instruction_decoder #(
         
         // write_to_register
         write_to_register <= needs_three_regs || link || load;
+        
+        // write_to_hi, write_to_lo
+        case (opcode)
+            MADD_OP, MADDU_OP: begin
+                write_to_hi <= 1;
+                write_to_lo <= 1;
+            end
+            
+            R_TYPE:
+                case (funct)
+                    MUL: begin
+                        write_to_hi <= 1;
+                        write_to_lo <= 1;
+                    end
+                    
+                    default: begin
+                        write_to_hi <= 0;
+                        write_to_lo <= 0;
+                    end
+                endcase
+            
+            default: begin
+                write_to_hi <= 0;
+                write_to_lo <= 0;
+            end
+        endcase
+        
+        case (opcode)
+            R_TYPE: begin
+                case (funct)
+                    MFHI: read_from_hi <= 1;
+                    default: read_from_hi <= 0;
+                endcase
+                
+                case (funct)
+                    MFLO: read_from_lo <= 1;
+                    default: read_from_lo <= 0;
+                endcase
+            end
+                
+            default: begin
+                read_from_hi <= write_to_register ? 0 : 1'bx;
+                read_from_lo <= write_to_register ? 0 : 1'bx;
+            end
+        endcase
     end
 endmodule
