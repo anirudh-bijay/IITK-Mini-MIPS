@@ -46,10 +46,10 @@
 | `bgte  rt, rs, label` |  0x1   | Branch on greater than or equal                          |                                 |
 | `ble   rt, rs, label` |  0x1   | Branch on less than                                      | Same as `bgte  rs, rt, label`   |
 | `bleq  rt, rs, label` |  0x7   | Branch on less than or equal                             | Same as `bgt   rs, rt, label`   |
-| `bleu  rt, rs, label` |        | Branch on less than unsigned                             |                                 |
-| `bgtu  rt, rs, label` |        | Branch on greater than unsigned                          |                                 |
+| `bleu  rt, rs, label` |  0x16  | Branch on less than unsigned                             |                                 |
+| `bgtu  rt, rs, label` |  0x17  | Branch on greater than unsigned                          |                                 |
 | `slti  rt, rs, imm`   |  0xa   | Set on less than immediate                               |                                 |
-| `seq   rt, rs, imm`   |        | Set on equal immediate                                   |                                 |
+| `seq   rt, rs, imm`   |  0x18  | Set on equal immediate                                   |                                 |
 
 ### J-type Instructions
 
