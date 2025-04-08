@@ -6,25 +6,27 @@
 
 ### R-type Instructions
 
-|      Instruction      | Opcode | Function |                         Meaning                          |    Notes    |
-|-----------------------|--------|----------|----------------------------------------------------------|-------------|
-| `add   rd, rs, rt`    |  0x0   |   0x20   | Add                                                      |             |
-| `sub   rd, rs, rt`    |  0x0   |   0x22   | Subtract                                                 |             |
-| `addu  rd, rs, rt`    |  0x0   |   0x21   | Add unsigned                                             |             |
-| `subu  rd, rs, rt`    |  0x0   |   0x23   | Subtract unsigned                                        |             |
-| `madd  rs, rt`        |  0x1c  |   0x0    | Integer multiply-add                                     | `rd = 0`    |
-| `maddu rs, rt`        |  0x1c  |   0x1    | Unsigned integer multiply-add                            | `rd = 0`    |
-| `mul   rs, rt`        |  0x0   |   0x18   | Multiply into {hi, lo}                                   | `rd = 0`    |
-| `and   rd, rs, rt`    |  0x0   |   0x24   | Bitwise AND                                              |             |
-| `or    rd, rs, rt`    |  0x0   |   0x25   | Bitwise OR                                               |             |
-| `not   rd, rt`        |        |          | Bitwise NOT                                              |             |
-| `xor   rd, rs, rt`    |  0x0   |   0x26   | Bitwise XOR                                              |             |
-| `sll   rd, rt, shamt` |  0x0   |   0x0    | Shift left logical                                       |             |
-| `srl   rd, rt, shamt` |  0x0   |   0x2    | Shift right logical                                      |             |
-| `sla   rd, rt, shamt` |  0x0   |   0x0    | Shift left arithmetic                                    |             |
-| `sra   rd, rt, shamt` |  0x0   |   0x3    | Shift right arithmetic                                   |             |
-| `slt   rd, rs, rt`    |  0x0   |   0x2a   | Set on less than                                         |             |
-| `jr    rs`            |  0x0   |   0x8    | Jump register                                            |             |
+|      Instruction      | Opcode | Function |                         Meaning                          |             Notes             |
+|-----------------------|--------|----------|----------------------------------------------------------|-------------------------------|
+| `add   rd, rs, rt`    |  0x0   |   0x20   | Add                                                      |                               |
+| `sub   rd, rs, rt`    |  0x0   |   0x22   | Subtract                                                 |                               |
+| `addu  rd, rs, rt`    |  0x0   |   0x21   | Add unsigned                                             |                               |
+| `subu  rd, rs, rt`    |  0x0   |   0x23   | Subtract unsigned                                        |                               |
+| `madd  rs, rt`        |  0x1c  |   0x0    | Integer multiply-add                                     | `rd = 0` (discard writes)     |
+| `maddu rs, rt`        |  0x1c  |   0x1    | Unsigned integer multiply-add                            | `rd = 0` (discard writes)     |
+| `mul   rs, rt`        |  0x0   |   0x18   | Multiply into `{hi, lo}`                                 | `rd = 0` (discard writes)     |
+| `and   rd, rs, rt`    |  0x0   |   0x24   | Bitwise AND                                              |                               |
+| `or    rd, rs, rt`    |  0x0   |   0x25   | Bitwise OR                                               |                               |
+| `not   rd, rt`        |  0x0   |   0x27   | Bitwise NOT                                              |                               |
+| `xor   rd, rs, rt`    |  0x0   |   0x26   | Bitwise XOR                                              |                               |
+| `sll   rd, rt, shamt` |  0x0   |   0x0    | Shift left logical                                       |                               |
+| `srl   rd, rt, shamt` |  0x0   |   0x2    | Shift right logical                                      |                               |
+| `sla   rd, rt, shamt` |  0x0   |   0x0    | Shift left arithmetic                                    |                               |
+| `sra   rd, rt, shamt` |  0x0   |   0x3    | Shift right arithmetic                                   |                               |
+| `slt   rd, rs, rt`    |  0x0   |   0x2a   | Set on less than                                         |                               |
+| `jr    rs`            |  0x0   |   0x8    | Jump register                                            | `rt = rd = 0`                 |
+| `mfhi  rd`            |  0x0   |   0x10   | Move from `hi`                                           | `rs = rt = 0`                 |
+| `mflo  rd`            |  0x0   |   0x12   | Move from `lo`                                           | `rs = rt = 0`                 |
 
 ### I-type Instructions
 
@@ -55,7 +57,6 @@
 |-----------------------|--------|----------------------------------------------------------|---------------------------------|
 | `j     label`         |  0x2   | Unconditional jump                                       |                                 |
 | `jal   label`         |  0x3   | Jump and link                                            |                                 |
-
 
 ## Components
 
