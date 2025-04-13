@@ -64,7 +64,31 @@ module instruction_decoder #(
     parameter SLT       = 6'h2a,
     parameter JR        = 6'h8,
     parameter MFHI      = 6'h10,
-    parameter MFLO      = 6'h12
+    parameter MFLO      = 6'h12,
+    // ALU opcodes
+    parameter ALU_ADD   = 5'h0,
+    parameter ALU_SUB   = 5'h1,
+    parameter ALU_AND   = 5'h2,
+    parameter ALU_OR    = 5'h3,
+    parameter ALU_NOT   = 5'h4,
+    parameter ALU_XOR   = 5'h5,
+    parameter ALU_SLL   = 5'h8,
+    parameter ALU_SRL   = 5'h9,
+    parameter ALU_SRA   = 5'ha,
+    parameter ALU_EQ    = 5'h10,
+    parameter ALU_NE    = 5'h11,
+    parameter ALU_LT    = 5'h12,
+    parameter ALU_GT    = 5'h13,
+    parameter ALU_LE    = 5'h14,
+    parameter ALU_GE    = 5'h15,
+    parameter ALU_LTU   = 5'h16,
+    parameter ALU_GTU   = 5'h17,
+    // Multiply unit opcodes
+    parameter MUL_MADD  = 3'b000,
+    parameter MUL_MADDU = 3'b001,
+    parameter MUL_MUL   = 3'b010,
+    parameter MUL_MFHI  = 3'b101,
+    parameter MUL_MFLO  = 3'b100
 )(
     input [5:0] opcode,
     input [5:0] funct,
@@ -121,6 +145,18 @@ module instruction_decoder #(
     // register file.
     output reg alu_imm,
     
+    // If shift_imm is high, the first operand of the ALU is sourced from
+    // {11'bx, inst[10:6]}.
+    // Else, the behaviour is determined by the load_upper signal.
+    output reg shift_imm,
+    
+    // If shift_imm is high, the behaviour is as described above.
+    // If shift_imm is low and load_upper is high, the first operand of the
+    // ALU is 16 (in decimal).
+    // Else, the first operand of the ALU is sourced from the data available
+    // at read port 1 of the register file.
+    output reg load_upper,
+    
     // If branch is high, the program counter is updated with the computed
     // branch destination address if the ALU output is zero.
     output reg branch,
@@ -130,21 +166,12 @@ module instruction_decoder #(
     // Else, it is deasserted.
     output reg write_to_register,
     
-    // If write_to_hi is high, a write is performed to the hi register.
-    // Else, nothing is written to hi.
-    output reg write_to_hi,
+    // If load_from_hi_lo is high, the second operand of the ALU is sourced
+    // from the output of the multiply unit.
+    output reg load_from_hi_lo,
     
-    // If write_to_lo is high, a write is performed to the lo register.
-    // Else, nothing is written to lo.
-    output reg write_to_lo,
-    
-    // If read_from_hi is high, the data at the write port of the register
-    // file is sourced from the hi register.
-    output reg read_from_hi,
-    
-    // If read_from_lo is high, the data at the write port of the register
-    // file is sourced from the lo register.
-    output reg read_from_lo
+    // Function code for multiply unit
+    output reg [2:0] mul_op
 );
     always @* begin
         // needs_three_regs
@@ -189,19 +216,53 @@ module instruction_decoder #(
         
         // alu_op
         case (opcode)
-            LW, SW: alu_op <= ADDIU;
-            default: alu_op <= funct;
+            ADDI, ADDIU, LW, SW: alu_op <= ALU_ADD;
+            ANDI: alu_op <= ALU_AND;
+            ORI: alu_op <= ALU_OR;
+            XORI: alu_op <= ALU_XOR;
+            LUI: alu_op <= ALU_SLL;
+            SEQ, BEQ: alu_op <= ALU_EQ;
+            BNE: alu_op <= ALU_NE;
+            BGT: alu_op <= ALU_GT;
+            BGTE: alu_op <= ALU_GE;
+            SLTI, BLE: alu_op <= ALU_LT;
+            BLEQ: alu_op <= ALU_LE;
+            BLEU: alu_op <= ALU_LTU;
+            BGTU: alu_op <= ALU_GTU;
+            R_TYPE:
+                case (funct)
+                    ADD, ADDU: alu_op <= ALU_ADD;
+                    SUB, SUBU: alu_op <= ALU_SUB;
+                    AND: alu_op <= ALU_AND;
+                    OR: alu_op <= ALU_OR;
+                    NOT: alu_op <= ALU_NOT;
+                    XOR: alu_op <= ALU_XOR;
+                    SLL, SLA: alu_op <= ALU_SLL;
+                    SRL: alu_op <= ALU_SRL;
+                    SRA: alu_op <= ALU_SRA;
+                    SLT: alu_op <= ALU_LT;
+                    MFHI, MFLO: alu_op <= ALU_OR;
+                    default: alu_op <= 5'bx;
+                endcase
+            default: alu_op <= 5'bx;
         endcase
         
         // alu_imm
         case (opcode)
-            R_TYPE:
-                case (funct)
-                    SLL, SLA, SRL, SRA: alu_imm <= 1;
-                    default: alu_imm <= 0;
-                endcase
-            
+            R_TYPE: alu_imm <= 0;
             default: alu_imm <= !branch;
+        endcase
+        
+        // shift_imm
+        case (opcode)
+            SLL, SLA, SRL, SRA: shift_imm <= 1;
+            default: shift_imm <= 0;
+        endcase
+        
+        // load_upper
+        case (opcode)
+            LUI: load_upper <= 1;
+            default: load_upper <= 0;
         endcase
         
         // branch
@@ -213,49 +274,35 @@ module instruction_decoder #(
         // write_to_register
         write_to_register <= needs_three_regs || link || load;
         
-        // write_to_hi, write_to_lo
+        // load_from_hi_lo
         case (opcode)
-            MADD_OP, MADDU_OP: begin
-                write_to_hi <= 1;
-                write_to_lo <= 1;
-            end
-            
             R_TYPE:
                 case (funct)
-                    MUL: begin
-                        write_to_hi <= 1;
-                        write_to_lo <= 1;
-                    end
-                    
-                    default: begin
-                        write_to_hi <= 0;
-                        write_to_lo <= 0;
-                    end
+                    MFHI, MFLO: load_from_hi_lo <= 1;
+                    JR, MUL: load_from_hi_lo <= 1'bx;
+                    default: load_from_hi_lo <= 0;
                 endcase
-            
-            default: begin
-                write_to_hi <= 0;
-                write_to_lo <= 0;
-            end
+            default: load_from_hi_lo <= 0;
         endcase
         
+        // mul_op
         case (opcode)
-            R_TYPE: begin
+            MADD_OP, MADDU_OP:
                 case (funct)
-                    MFHI: read_from_hi <= 1;
-                    default: read_from_hi <= 0;
+                    MADD: mul_op <= MUL_MADD;
+                    MADDU: mul_op <= MUL_MADDU;
+                    default: mul_op <= MUL_MFLO;
                 endcase
                 
+            R_TYPE:
                 case (funct)
-                    MFLO: read_from_lo <= 1;
-                    default: read_from_lo <= 0;
+                    MUL: mul_op <= MUL_MUL;
+                    MFHI: mul_op <= MUL_MFHI;
+                    MFLO: mul_op <= MUL_MFLO;
+                    default: mul_op <= MUL_MFLO;
                 endcase
-            end
                 
-            default: begin
-                read_from_hi <= write_to_register ? 0 : 1'bx;
-                read_from_lo <= write_to_register ? 0 : 1'bx;
-            end
+            default: mul_op <= MUL_MFLO;
         endcase
     end
 endmodule
