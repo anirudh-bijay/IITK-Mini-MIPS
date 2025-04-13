@@ -23,30 +23,33 @@
 module processor(
     input clk
 );
-    wire [31:0] pc_out;
+    wire [31:0] pc_in, pc_out, pc_inc;
     wire [31:0] inst_mem_out;
-    wire [31:0] inst_reg_out;
+//    wire [31:0] inst_reg_out;
     wire [31:0] reg_out1, reg_out2;
     wire [31:0] data_mem_out;
     wire [31:0] alu_out;
+    wire [31:0] mul_out;
+    wire overflow;
     
     // Labels for components of an instruction word
     wire [5:0] opcode, funct;
     wire [4:0] rs, rt, rd, shamt;
-    assign {opcode, rs, rt, rd, shamt, funct} = inst_reg_out;
+    assign {opcode, rs, rt, rd, shamt, funct} = inst_mem_out;
     wire [15:0] imm;
-    assign {opcode, rs, rt, imm} = inst_reg_out;
+    assign {opcode, rs, rt, imm} = inst_mem_out;
     wire [25:0] label;
-    assign {opcode, label} = inst_reg_out;
+    assign {opcode, label} = inst_mem_out;
     
     // Control signals
     wire needs_three_regs, jump, jump_reg, load, store, link, alu_imm,
-        branch, write_to_register, write_to_hi, write_to_lo, read_from_hi,
-        read_from_lo;
+        shift_imm, load_upper, branch, write_to_register, load_from_hi_lo;
     wire [5:0] alu_op;
+    wire [2:0] mul_op;
     
     // Program counter
     program_counter pc(
+        .D(pc_in),
         .clk(clk),
         .Q(pc_out)
     );
@@ -67,12 +70,12 @@ module processor(
         .data_out(data_mem_out)
     );
     
-    // Instruction register
-    instruction_register inst_reg(
-        .D(inst_mem_out),
-        .clk(clk),
-        .Q(inst_reg_out)
-    );
+//    // Instruction register
+//    instruction_register inst_reg(
+//        .D(inst_mem_out),
+//        .clk(clk),
+//        .Q(inst_reg_out)
+//    );
     
     // Instruction decoder
     instruction_decoder inst_dec(
@@ -86,12 +89,12 @@ module processor(
         .link(link),
         .alu_op(alu_op),
         .alu_imm(alu_imm),
+        .shift_imm(shift_imm),
+        .load_upper(load_upper),
         .branch(branch),
         .write_to_register(write_to_register),
-        .write_to_hi(write_to_hi),
-        .write_to_lo(write_to_lo),
-        .read_from_hi(read_from_hi),
-        .read_from_lo(read_from_lo)
+        .load_from_hi_lo(load_from_hi_lo),
+        .mul_op(mul_op)
     );
     
     // Register file
@@ -109,7 +112,7 @@ module processor(
             load
                 ? data_mem_out
                 : link
-                    ? pc_out + 4
+                    ? pc_inc
                     : alu_out
         ),
         .wr_en(write_to_register),
@@ -117,4 +120,45 @@ module processor(
         .data_out1(reg_out1),
         .data_out2(reg_out2)
     );
+    
+    // ALU
+    alu alu(
+        .in1(
+            shift_imm
+                ? {27'bx, imm[10:6]}
+                : load_upper
+                    ? {27'dx, 5'd16} // 32 / 2
+                    : reg_out1
+        ),
+        .in2(
+            load_from_hi_lo
+                ? mul_out
+                : alu_imm
+                    ? imm
+                    : reg_out2
+        ),
+        .alu_op(alu_op),
+        .alu_imm(alu_imm),
+        .out(alu_out),
+        .overflow(overflow)
+    );
+    
+    // Multiply unit
+    multiply_unit multiply_unit(
+        .in1(reg_out1),
+        .in2(reg_out2),
+        .mul_op(mul_op),
+        .clk(clk),
+        .out(mul_out)
+    );
+    
+    // Program counter calculation
+    assign pc_inc = pc_out + 32'h4;
+    assign pc_in = jump
+        ? jump_reg
+            ? reg_out1
+            : {pc_inc[31:28], label, 2'b0}
+        : branch && alu_out[0]
+            ? pc_inc + imm
+            : pc_inc;
 endmodule
