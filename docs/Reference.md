@@ -1,6 +1,4 @@
-# IITK-Mini-MIPS
-
-## Design and Constraints
+# IITK Mini-MIPS
 
 ## Instructions
 
@@ -40,16 +38,16 @@
 | `lw    rt, off(rs)`   |  0x23  | Load word                                                |                                 |
 | `sw    rt, off(rs)`   |  0x2b  | Store word                                               |                                 |
 | `lui   rt, imm`       |  0xf   | Load upper immediate                                     |                                 |
-| `beq   rt, rs, label` |  0x4   | Branch on equal                                          |                                 |
-| `bne   rt, rs, label` |  0x5   | Branch on not equal                                      |                                 |
-| `bgt   rt, rs, label` |  0x7   | Branch on greater than                                   |                                 |
-| `bgte  rt, rs, label` |  0x1   | Branch on greater than or equal                          |                                 |
-| `ble   rt, rs, label` |  0x1   | Branch on less than                                      | Same as `bgte  rs, rt, label`   |
-| `bleq  rt, rs, label` |  0x7   | Branch on less than or equal                             | Same as `bgt   rs, rt, label`   |
-| `bleu  rt, rs, label` |  0x16  | Branch on less than unsigned                             |                                 |
-| `bgtu  rt, rs, label` |  0x17  | Branch on greater than unsigned                          |                                 |
-| `slti  rt, rs, imm`   |  0xa   | Set on less than immediate                               |                                 |
-| `seq   rt, rs, imm`   |  0x18  | Set on equal immediate                                   |                                 |
+| `beq   rs, rt, label` |  0x4   | Branch on equal                                          |                                 |
+| `bne   rs, rt, label` |  0x5   | Branch on not equal                                      |                                 |
+| `bgt   rs, rt, label` |  0x7   | Branch on greater than                                   |                                 |
+| `bgte  rs, rt, label` |  0x1   | Branch on greater than or equal                          |                                 |
+| `ble   rs, rt, label` |  0x1   | Branch on less than                                      | Same as `bgte  rt, rs, label`   |
+| `bleq  rs, rt, label` |  0x7   | Branch on less than or equal                             | Same as `bgt   rt, rs, label`   |
+| `bleu  rs, rt, label` |  0x16  | Branch on less than unsigned                             |                                 |
+| `bgtu  rs, rt, label` |  0x17  | Branch on greater than unsigned                          |                                 |
+| `slti  rs, rt, imm`   |  0xa   | Set on less than immediate                               |                                 |
+| `seq   rs, rt, imm`   |  0x18  | Set on equal immediate                                   |                                 |
 
 ### J-type Instructions
 
@@ -63,9 +61,13 @@
 ### Instruction Memory
 
 The instruction memory has a word size of exactly 32 bits. The implementation
-uses a simple dual port distributed RAM for the instruction memory.
+uses a simple dual port distributed RAM for the instruction memory. Unaligned
+accesses are not allowed and fail silently.
 
-![Instruction memory schematic](instruction_memory_schematic.png)
+![Instruction memory schematic](assets/instruction_memory_schematic.png)
+
+Programs can be loaded into the instruction memory using coefficient files
+(COE files); see the [readme](../README.md) for details.
 
 ### Program Counter
 
@@ -73,7 +75,7 @@ The program counter holds the address of the instruction to fetch in the next
 cycle. The program counter is 32 bits wide and is implemented the same way as
 a general-purpose register (see below).
 
-![Program counter schematic](program_counter_schematic.png)
+![Program counter schematic](assets/program_counter_schematic.png)
 
 ### Register File
 
@@ -82,12 +84,7 @@ The registers are labelled `$0` through `$31`, and their respective addresses
 in the implementation are 0 through 31. Register `$0` is hardwired to zero;
 writes to it are discarded.
 
-The schematic can be viewed [here](register_file_schematic.pdf).
-
-Although the schematic displays a dummy register for register `$0`, only
-writes are performed to it. The output corresponding to 0 for the mux select
-is hardwired to ground; as such, the register has no meaningful role and
-should ideally be optimised out.
+The schematic can be viewed [here](assets/register_file_schematic.pdf).
 
 Each register is implemented as a collection of 32 D flip-flops, each storing
 one bit.
@@ -97,7 +94,7 @@ one bit.
 The instruction decoder uses the instruction opcode and, in case of R-type
 instructions, the *funct* field, to set or reset various control signals.
 
-![Instruction decoder schematic](instruction_decoder_schematic.png)
+![Instruction decoder schematic](assets/instruction_decoder_schematic.png)
 
 | Control Signal         | Effect                                                                                                                           |
 |------------------------|----------------------------------------------------------------------------------------------------------------------------------|
@@ -120,7 +117,7 @@ The ALU supports addition and subtraction of integers, bitwise operations
 (including bit shifts), and comparison between integers. The operations can
 be performed with signed (2's complement) as well as unsigned integers.
 
-The schematic can be viewed [here](alu_schematic.pdf).
+The schematic can be viewed [here](assets/alu_schematic.pdf).
 
 Arithmetic and relational operations require sign-extension of immediate
 operands, while bitwise operators require zero-extension of immediate
@@ -140,4 +137,36 @@ The hardware for multiplication and fused multiply-addd, as well as the
 from the ALU. The `hi` and `lo` registers are implemented the same way
 as general-purpose registers.
 
-![Mulyiply unit schematic](multiply_unit_schematic.png)
+![Mulyiply unit schematic](assets/multiply_unit_schematic.png)
+
+### Data Memory
+
+The data memory has a word size of exactly 32 bits. The implementation
+uses a single port distributed RAM for the instruction memory.
+Unaligned accesses are not allowed and fail silently.
+
+![Data memory schematic](assets/data_memory_schematic.png)
+
+Addresses 512 to 515 are used for memory-mapped I/O.
+
+- Address 512 receives input data; once the data is ready, the value `1` is
+stored at address 513 by the input device to indicate that input is complete.
+In the next cycle, `0` is written to address 513.
+
+- Address 514 receives output data; once the data is ready,
+  the program must store the value `1` at address 515. In the
+  next cycle, the program should store `0` at the address
+  (unless multiple words of data are being output in one go).
+
+### Floating Point Coprocessor
+
+The processor is equipped with a floating point coprocessor with 32
+floating point registers, 8 conditional flags, and a dedicated
+instruction decoder. The FPU is capable of addition, subtraction, and
+comparison of IEEE-754 single-precision floats.
+
+The schematic can be viewed [here](assets/floating_point_coprocessor_schematic.pdf).
+
+## Overall Design
+
+![CPU schematic](assets/cpu_schematic.png)
