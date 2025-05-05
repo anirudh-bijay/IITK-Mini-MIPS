@@ -26,9 +26,13 @@ module program_counter #(
     parameter BUS_WIDTH = 32
 )(
     input [BUS_WIDTH - 1 : 0] D,
+    input rst,
     input clk,
     output reg [BUS_WIDTH - 1 : 0] Q
 );
-    always @(posedge clk)
-        Q <= D;
+    always @(posedge clk or posedge rst)
+        if (rst)
+            Q <= {BUS_WIDTH {1'b0}};
+        else
+            Q <= D;
 endmodule

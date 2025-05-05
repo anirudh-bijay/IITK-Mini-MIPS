@@ -13,6 +13,9 @@
 // Wrapper around an instance of distributed_ram_0
 // assigned for storing instructions.
 // 
+// Unaligned accesses (using addresses that are not multiples
+// of 4) are not supported.
+// 
 // Dependencies: 
 // 
 // Revision:
@@ -27,8 +30,8 @@ module instruction_memory #(
     localparam BUS_WIDTH = 32,
     localparam ADDR_WIDTH = $clog2(CAPACITY)
 )(
-    input [ADDR_WIDTH - 1 : 0] read_addr,
-    input [ADDR_WIDTH - 1 : 0] write_addr,
+    input [ADDR_WIDTH + 1 : 0] read_addr,
+    input [ADDR_WIDTH + 1 : 0] write_addr,
     input [BUS_WIDTH - 1 : 0] data_in,
     input wr_en,
     input clk,
@@ -36,8 +39,8 @@ module instruction_memory #(
 );
     simple_dual_port_distributed_ram_0 memory(
         .d(data_in),
-        .a(write_addr),
-        .dpra(read_addr),
+        .a(write_addr[ADDR_WIDTH + 1 : 2]),
+        .dpra(read_addr[ADDR_WIDTH + 1 : 2]),
         .dpo(data_out),
         .clk(clk),
         .we(wr_en)

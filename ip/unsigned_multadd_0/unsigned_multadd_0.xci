@@ -47,7 +47,7 @@
         "PACKAGE": [ { "value": "clg400" } ],
         "PREFHDL": [ { "value": "VERILOG" } ],
         "SILICON_REVISION": [ { "value": "" } ],
-        "SIMULATOR_LANGUAGE": [ { "value": "MIXED" } ],
+        "SIMULATOR_LANGUAGE": [ { "value": "VERILOG" } ],
         "SPEEDGRADE": [ { "value": "-1" } ],
         "STATIC_POWER": [ { "value": "" } ],
         "TEMPERATURE_GRADE": [ { "value": "" } ]

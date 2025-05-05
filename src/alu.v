@@ -73,21 +73,20 @@ module alu #(
     // sum/difference truncated to 32 bits, a carry-out bit that is
     // used to determine whether overflow has occurred.
     
-    wire [BUS_WIDTH - 1 : 0] addsub_out;
-    wire addsub_c_out;
+    wire [BUS_WIDTH : 0] addsub_out;
+    wire addsub_c_out = addsub_out[BUS_WIDTH];
     
     int_addsub_0 adder_subtractor(
         .A(operand1),
         .B(operand2),
         .ADD(
             alu_op == ADD
-                ? 1
+                ? 1'b1
                 : alu_op == SUB
-                    ? 0
+                    ? 1'b0
                     : 1'bx  // Don't care condition
         ),
-        .S(addsub_out),
-        .C_OUT(addsub_c_out)
+        .S(addsub_out)
     );
     
     wire addsub_overflow = addsub_c_out ^ addsub_out[BUS_WIDTH - 1];

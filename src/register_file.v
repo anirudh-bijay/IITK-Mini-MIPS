@@ -41,18 +41,22 @@ module register_file #(
     output [BUS_WIDTH - 1 : 0] data_out1,
     output [BUS_WIDTH - 1 : 0] data_out2
 );
-    reg [BUS_WIDTH - 1 : 0] registers[0 : COUNT - 1];
-        
-    assign data_out1 = registers[read_addr1];
-    assign data_out2 = registers[read_addr2];
+    reg [BUS_WIDTH - 1 : 0] registers[1 : COUNT - 1];
+    wire [BUS_WIDTH - 1 : 0] register_values[0 : COUNT - 1];
     
-    always @*
-        registers[0] <= {BUS_WIDTH{1'b0}};
+    assign register_values[0] = {BUS_WIDTH {1'b0}};
+    
+    genvar i;
+    generate
+        for (i = 1; i < COUNT; i = i + 1) begin
+            assign register_values[i] = registers[i];
+        end
+    endgenerate
+        
+    assign data_out1 = register_values[read_addr1];
+    assign data_out2 = register_values[read_addr2];
     
     always @(posedge clk)
         if (wr_en)
-            case (write_addr)
-                {ADDR_WIDTH{1'b0}}: registers[0] <= registers[0];
-                default: registers[write_addr] <= data_in;
-            endcase
+            registers[write_addr] <= data_in;
 endmodule
