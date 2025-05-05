@@ -45,6 +45,7 @@ module instruction_decoder #(
     parameter SEQ       = 6'h18,
     parameter J         = 6'h2,
     parameter JAL       = 6'h3,
+    parameter CP1       = 6'h11,
     // Functions
     parameter ADD       = 6'h20,
     parameter SUB       = 6'h22,
@@ -66,23 +67,23 @@ module instruction_decoder #(
     parameter MFHI      = 6'h10,
     parameter MFLO      = 6'h12,
     // ALU opcodes
-    parameter ALU_ADD   = 5'h0,
-    parameter ALU_SUB   = 5'h1,
-    parameter ALU_AND   = 5'h2,
-    parameter ALU_OR    = 5'h3,
-    parameter ALU_NOT   = 5'h4,
-    parameter ALU_XOR   = 5'h5,
-    parameter ALU_SLL   = 5'h8,
-    parameter ALU_SRL   = 5'h9,
-    parameter ALU_SRA   = 5'ha,
-    parameter ALU_EQ    = 5'h10,
-    parameter ALU_NE    = 5'h11,
-    parameter ALU_LT    = 5'h12,
-    parameter ALU_GT    = 5'h13,
-    parameter ALU_LE    = 5'h14,
-    parameter ALU_GE    = 5'h15,
-    parameter ALU_LTU   = 5'h16,
-    parameter ALU_GTU   = 5'h17,
+    parameter ALU_ADD = 5'h0,
+    parameter ALU_SUB = 5'h10,
+    parameter ALU_AND = 5'h1,
+    parameter ALU_OR  = 5'h2,
+    parameter ALU_NOT = 5'h3,
+    parameter ALU_XOR = 5'h4,
+    parameter ALU_SLL = 5'h5,
+    parameter ALU_SRL = 5'h6,
+    parameter ALU_SRA = 5'h7,
+    parameter ALU_EQ  = 5'h8,
+    parameter ALU_NE  = 5'h9,
+    parameter ALU_LT  = 5'ha,
+    parameter ALU_GT  = 5'hb,
+    parameter ALU_LE  = 5'hc,
+    parameter ALU_GE  = 5'hd,
+    parameter ALU_LTU = 5'he,
+    parameter ALU_GTU = 5'hf,
     // Multiply unit opcodes
     parameter MUL_MADD  = 3'b000,
     parameter MUL_MADDU = 3'b001,
@@ -171,7 +172,13 @@ module instruction_decoder #(
     output reg load_from_hi_lo,
     
     // Function code for multiply unit
-    output reg [2:0] mul_op
+    output reg [2:0] mul_op,
+    
+    // 
+    output reg from_cp1,
+    
+    //
+    output reg has_overflow
 );
     always @* begin
         // needs_three_regs
@@ -182,13 +189,19 @@ module instruction_decoder #(
         
         // jump
         case (opcode)
-            J, JR, JAL: jump <= 1;
+            J, JAL: jump <= 1;
+            R_TYPE:
+                case (funct)
+                    JR: jump <= 1;
+                    default: jump <= 0;
+                endcase
+                
             default: jump <= 0;
         endcase
         
         // jump_reg
         case (opcode)
-            JR: jump_reg <= 1;
+            R_TYPE: jump_reg <= 1;
             default: jump_reg <= jump ? 0 : 1'bx;
         endcase
         
@@ -255,7 +268,12 @@ module instruction_decoder #(
         
         // shift_imm
         case (opcode)
-            SLL, SLA, SRL, SRA: shift_imm <= 1;
+            R_TYPE:
+                case (funct)
+                    SLL, SLA, SRL, SRA: shift_imm <= 1;
+                    default: shift_imm <= 0;
+                endcase
+                
             default: shift_imm <= 0;
         endcase
         
@@ -272,7 +290,7 @@ module instruction_decoder #(
         endcase
         
         // write_to_register
-        write_to_register <= needs_three_regs || link || load;
+        write_to_register <= !(branch || store || (jump && !(jump_reg || link)));
         
         // load_from_hi_lo
         case (opcode)
@@ -303,6 +321,23 @@ module instruction_decoder #(
                 endcase
                 
             default: mul_op <= MUL_MFLO;
+        endcase
+        
+        // from_cp1
+        case (opcode)
+            CP1: from_cp1 <= 1;
+            default: from_cp1 <= 0;
+        endcase
+        
+        // has_overflow
+        case (opcode)
+            R_TYPE:
+                case (funct)
+                    ADD, SUB, ADDI: has_overflow <= 1;
+                    default: has_overflow <= 0;
+                endcase
+                
+            default: has_overflow <= 0;
         endcase
     end
 endmodule
