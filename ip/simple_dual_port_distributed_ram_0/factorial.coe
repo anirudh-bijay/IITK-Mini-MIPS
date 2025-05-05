@@ -1,0 +1,115 @@
+; ip/simple_dual_port_distributed_ram_0/factorial.coe
+;
+; Assembly:
+;
+; # Initial delay after power-on
+; 
+; nop                             # 0x00
+; 
+; # main
+; # -------------
+; # Entry point of the program
+; 
+; jal     0x3c                    # 0x04 | jal read_word
+; or      $a0, $zero, $v0         # 0x08
+; jal     0x1c                    # 0x0c | jal fact
+; or      $a0, $v0, $zero         # 0x10
+; jal     0x50                    # 0x14 | jal write_word
+; j       0x68                    # 0x18 | j exit
+; 
+; # fact
+; # -------------
+; # Computes the factorial of a whole number.
+; #
+; # PARAMETERS
+; #   - $a0: Number whose factorial to compute.
+; #
+; # RETURNS
+; #   - $v0: Factorial of the argument.
+; #
+; # NOTE
+; #   The argument passed should be small enough
+; #   that its factorial can be represented in
+; #   32 bits; else, the result will be incorrect.
+; 
+; addiu   $t0, $a0, -1            # 0x1c
+; beq     $t0, $zero, 0x10        # 0x20
+; mul     $a0, $t0                # 0x24
+; mflo    $a0                     # 0x28
+; addiu   $t0, $t0, -1            # 0x2c
+; j       0x20                    # 0x30
+; or      $v0, $a0, $zero         # 0x34
+; jr      $ra                     # 0x38
+; 
+; # read_word
+; # -------------
+; # Reads a 32-bit word from memory-mapped I/O.
+; #
+; # PARAMETERS
+; #   None.
+; #
+; # RETURNS
+; #   - $v0: 32-bit word read from input.
+; 
+; ori     $at, $zero, 512         # 0x3c
+; lw      $v0, 1($at)             # 0x40
+; beq     $v0, $zero, -0x8        # 0x44
+; lw      $v0, 0($at)             # 0x48
+; jr      $ra                     # 0x4c
+; 
+; # write_word
+; # -------------
+; # Writes a 32-bit word to memory-mapped I/O.
+; #
+; # PARAMETERS
+; #   - $a0: 32-bit word to write to output.
+; #
+; # RETURNS
+; #   None.
+; 
+; ori     $at, $zero, 512         # 0x50
+; sw      $a0, 2($at)             # 0x54
+; ori     $a0, $zero, 1           # 0x58
+; sw      $a0, 3($at)             # 0x5c
+; sw      $zero, 3($at)           # 0x60
+; jr      $ra                     # 0x64
+; 
+; # exit
+; # -------------
+; # Exits the program.
+; #
+; # PARAMETERS
+; #   None.
+; #
+; # RETURNS
+; #   None.
+; nop                             # 0x68
+
+memory_initialization_radix=2;
+memory_initialization_vector=00000000000000000000000000000000
+00001100000000000000000000001111
+00000000000000100010000000100101
+00001100000000000000000000000111
+00000000010000000010000000100101
+00001100000000000000000000010100
+00001000000000000000000000011010
+00100100100010001111111111111111
+00010001000000000000000000000100
+00000000100010000000000000011000
+00000000000000000010000000010010
+00100101000010001111111111111111
+00001000000000000000000000001000
+00000000100000000001000000100101
+00000011111000000000000000001000
+00110100000000010000001000000000
+10001100001000100000000000000001
+00010000010000001111111111111110
+10001100001000100000000000000000
+00000011111000000000000000001000
+00110100000000010000001000000000
+10101100001001000000000000000010
+00110100000001000000000000000001
+10101100001001000000000000000011
+10101100001000000000000000000011
+00000011111000000000000000001000
+00000000000000000000000000000000;
