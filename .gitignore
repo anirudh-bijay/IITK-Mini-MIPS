@@ -1,8 +1,13 @@
 # Exclude the Vivado project folder
-vivado/
+/IITK-Mini-MIPS/
+
+# Exclude Python cache files
+__pycache__/
 
 # Exclude all files and folders within folders for individual IPs
 # inside the ip folder
 ip/*/*
 # except the .xci file
 !ip/*/*.xci
+# and .coe files
+!ip/*/*.coe
