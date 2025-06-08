@@ -76,3 +76,9 @@ To run a program:
     asserted at the start. Thereafter, `rst` should be deasserted; execution
     then starts from the first instruction in your program, loaded at address
     `0x0`.
+
+## Results
+
+The design was implemented on a PYNQ-Z2 FPGA development board interfaced with
+the Zynq-7000 Processing System at a clock frequency of 40.000 MHz. The
+implemented design had an LUT count of 1797 and utilised 13 DSP slices.
