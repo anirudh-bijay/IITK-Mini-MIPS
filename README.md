@@ -21,7 +21,9 @@ You will need the [AMD Vivado™ Design Suite](https://www.amd.com/en/products/s
 to build the project.
 
 To build, simply add all files under the [`src`](src) and [`ip`](ip)
-directories into a new Vivado project. Alternatively, you may run the Tcl
+directories into a new Vivado project; include the test bench under
+[`src/test_benches`](src/test_benches) as a simulation source, and
+all other files as design sources. Alternatively, you may run the Tcl
 script [`build.tcl`](build.tcl) from the Vivado Tcl Shell.
 
 > If, on adding the files, the IPs show up as 'locked', right-click on each
