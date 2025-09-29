@@ -1,7 +1,7 @@
 # IITK Mini-MIPS
 
 IITK Mini-MIPS is an extended and slightly modified version of the MIPS instruction set
-architecture. IITK-Mini-MIPS assumes a Harvard architecture with the word size and
+architecture. IITK Mini-MIPS assumes a Harvard architecture with the word size and
 instruction width both fixed at 32 bits. The architecture mandates 32 general-purpose
 registers and a floating point coprocessor with 32 floating point registers and support
 for addition, subtraction, and comparisons.
