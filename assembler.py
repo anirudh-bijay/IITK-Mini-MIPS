@@ -9,7 +9,7 @@ def parse_args():
 
     # Instantiate the argument parser
     parser = argparse.ArgumentParser(
-        description='Convert a program written in IITK-Mini-MIPS assembly '
+        description='Convert a program written in IITK Mini-MIPS assembly '
             'language to machine code.',
     )
 
