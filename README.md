@@ -12,7 +12,7 @@ on a PYNQ-Z2 FPGA development board.
 
 This project is undertaken in partial fulfilment of the requirements of the course
 [CS220: Computer Organisation](https://www.cse.iitk.ac.in/pages/CS220.html) offered at
-IIT Kanpur in Winter 2025 instructed by
+[IIT Kanpur](https://iitk.ac.in) in Winter 2025 instructed by
 [Prof. Debapriya Basu Roy](https://www.cse.iitk.ac.in/users/dbroy).
 
 ## Building the Project
